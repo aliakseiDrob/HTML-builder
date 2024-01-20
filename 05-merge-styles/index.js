@@ -1,23 +1,29 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const fsPromises = require('node:fs/promises');
+const path = require('node:path');
 
-const sourcePath = path.join(__dirname, 'styles');
-const bundleFile = path.join(__dirname, 'project-dist', 'bundle.css');
-
-fs.readdir(sourcePath, { withFileTypes: true }, (error, files) => {
-  if (error) console.log(error.message);
-
-  const writeStream = fs.createWriteStream(bundleFile);
-
-  files.forEach((file) => {
-    if (file.isFile()) {
-      const filePath = path.join(sourcePath, file.name);
-      const fileExtension = path.extname(filePath);
-      if (fileExtension === '.css') {
-        const readStream = fs.createReadStream(filePath, 'utf-8');
-
-        readStream.pipe(writeStream);
+(async () => {
+  const source = path.join(__dirname, 'styles');
+  const bundle = path.join(__dirname, 'project-dist', 'bundle.css');
+  const writeStream = fs.createWriteStream(bundle);
+  try {
+    const files = await fsPromises.readdir(
+      source,
+      { withFileTypes: true },
+      (files) => {
+        return files;
+      },
+    );
+    files.forEach(async (file) => {
+      const filePath = path.join(source, file.name);
+      const fileName = path.basename(filePath);
+      if ('.css' === path.extname(filePath)) {
+        fs.createReadStream(path.join(source, fileName)).on('data', (data) => {
+          writeStream.write(data.toString() + '\n');
+        });
       }
-    }
-  });
-});
+    });
+  } catch (error) {
+    process.stdout(error);
+  }
+})();
