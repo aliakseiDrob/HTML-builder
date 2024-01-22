@@ -12,6 +12,7 @@ async function generatePage() {
     const map = await createComponentsMap();
     await CreateHtmlFile(map);
     await crereCssFile();
+    await copyAssets();
   } catch (error) {
     console.log(error);
   }
@@ -77,4 +78,30 @@ async function crereCssFile() {
   } catch (error) {
     process.stdout(error);
   }
+}
+
+async function copyAssets() {
+  const srcPath = path.join(__dirname, 'assets', 'img');
+  const distPath = path.join(__dirname, 'project-dist', 'assets', 'img');
+  await fsPromisses.mkdir(path.join(__dirname, 'project-dist', 'assets'), {
+    recursive: true,
+  });
+  await fsPromisses.mkdir(
+    path.join(__dirname, 'project-dist', 'assets', 'img'),
+    {
+      recursive: true,
+    },
+  );
+  const files = await fsPromisses.readdir(
+    srcPath,
+    { withFileTypes: true },
+    (files) => {
+      return files;
+    },
+  );
+  files.forEach((file) => {
+    const fileSourse = path.join(srcPath, file.name);
+    const fileDest = path.join(distPath, file.name);
+    fsPromisses.copyFile(fileSourse, fileDest);
+  });
 }
