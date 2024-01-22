@@ -9,14 +9,9 @@ async function generatePage() {
   await fsPromisses.mkdir(dest, { recursive: true });
   /*--------------/Create root folder -------------- */
   try {
-    /*--------------Read tamplate HTML -------------- */
-    const sourceHtml = await fsPromisses.readFile(
-      path.join(__dirname, 'template.html'),
-    );
-    //  console.log(sourceHtml.toString());
-    /*--------------/Read tamplate HTML -------------- */
     const map = await createComponentsMap();
-    const html = await CreateHtmlFile(map);
+    await CreateHtmlFile(map);
+    await crereCssFile();
   } catch (error) {
     console.log(error);
   }
@@ -56,4 +51,30 @@ async function CreateHtmlFile(map) {
   }
   writeStream.write(sourceHtml);
   return sourceHtml;
+}
+
+async function crereCssFile() {
+  const source = path.join(__dirname, 'styles');
+  const style = path.join(__dirname, 'project-dist', 'style.css');
+  const writeStream = fs.createWriteStream(style);
+  try {
+    const files = await fsPromisses.readdir(
+      source,
+      { withFileTypes: true },
+      (files) => {
+        return files;
+      },
+    );
+    files.forEach(async (file) => {
+      const filePath = path.join(source, file.name);
+      const fileName = path.basename(filePath);
+      if ('.css' === path.extname(filePath)) {
+        fs.createReadStream(path.join(source, fileName)).on('data', (data) => {
+          writeStream.write(data.toString() + '\n');
+        });
+      }
+    });
+  } catch (error) {
+    process.stdout(error);
+  }
 }
