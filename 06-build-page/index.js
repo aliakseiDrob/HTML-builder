@@ -2,7 +2,7 @@ const fsPromisses = require('node:fs/promises');
 const fs = require('node:fs');
 const path = require('node:path');
 
-async function generatePage() {
+(async () => {
   /*--------------Create root folder -------------- */
   const dest = path.join(__dirname, 'project-dist');
   await fsPromisses.rm(dest, { force: true, recursive: true });
@@ -12,13 +12,13 @@ async function generatePage() {
     const map = await createComponentsMap();
     await CreateHtmlFile(map);
     await crereCssFile();
-    await copyAssets();
+    const srcPath = path.join(__dirname, 'assets');
+    const distPath = path.join(__dirname, 'project-dist', 'assets');
+    await copyAssets(srcPath, distPath);
   } catch (error) {
     console.log(error);
   }
-}
-
-generatePage();
+})();
 
 const createComponentsMap = async () => {
   const files = await fsPromisses.readdir(path.join(__dirname, 'components'), {
@@ -80,28 +80,19 @@ async function crereCssFile() {
   }
 }
 
-async function copyAssets() {
-  const srcPath = path.join(__dirname, 'assets', 'img');
-  const distPath = path.join(__dirname, 'project-dist', 'assets', 'img');
-  await fsPromisses.mkdir(path.join(__dirname, 'project-dist', 'assets'), {
+async function copyAssets(srcPath, distPath) {
+  await fsPromisses.mkdir(distPath, {
     recursive: true,
   });
-  await fsPromisses.mkdir(
-    path.join(__dirname, 'project-dist', 'assets', 'img'),
-    {
-      recursive: true,
-    },
-  );
-  const files = await fsPromisses.readdir(
-    srcPath,
-    { withFileTypes: true },
-    (files) => {
-      return files;
-    },
-  );
+  const files = await fsPromisses.readdir(srcPath, { withFileTypes: true });
   files.forEach((file) => {
-    const fileSourse = path.join(srcPath, file.name);
-    const fileDest = path.join(distPath, file.name);
-    fsPromisses.copyFile(fileSourse, fileDest);
+    if (!file.isFile()) {
+      copyAssets(path.join(srcPath, file.name), path.join(distPath, file.name));
+    } else {
+      fsPromisses.copyFile(
+        path.join(srcPath, file.name),
+        path.join(distPath, file.name),
+      );
+    }
   });
 }
